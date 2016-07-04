@@ -37,7 +37,7 @@ CC          = gcc
 CX          = g++
 CCFLAGS     = -O2 -O3 -DLINUX -D_GNU_SOURCE -Wall -c $(INCLUDES) $(FORMAT) -fPIC -g
 CXFLAGS     = -O2 -O3 -DLINUX -D_GNU_SOURCE -Wall -c $(INCLUDES) $(FORMAT) -fPIC -g
-FORMAT     = -m64
+# FORMAT     = -m64
 INCLUDES    += -I$(DIR_DXL)/include
 
 #---------------------------------------------------------------------

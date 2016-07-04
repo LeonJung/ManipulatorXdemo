@@ -69,7 +69,7 @@ DXL5_ID                     = 5                             # Dynamixel ID: 5
 DXL6_ID                     = 6                             # Dynamixel ID: 6
 DXL7_ID                     = 7                             # Dynamixel ID: 7
 BAUDRATE                    = 1000000
-DEVICENAME                  = "COM8".encode('utf-8')        # Check which port is being used on your controller
+DEVICENAME                  = "/dev/ttyUSB0".encode('utf-8')        # Check which port is being used on your controller
                                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0"
 
 TORQUE_ENABLE               = 1                             # Value for enabling the torque
