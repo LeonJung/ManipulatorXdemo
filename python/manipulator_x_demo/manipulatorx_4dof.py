@@ -99,7 +99,7 @@ dxl_addparam_result = 0                                     # AddParam result
 dxl_getdata_result = 0                                      # GetParam result
 
 dxl_goal_position = [
-    [2048, 2048, 2048, 2048, 2700],                         # Init
+    [2048, 2520, 1049, 1570, 2700],                         # Init
     [1920, 2048, 750, 2400, 2400],                          # Bow
     [1920, 1350, 1350, 2530, 2400],                         # Move
     [1920, 1350, 1350, 2530, 2560],                         # Grab
@@ -107,7 +107,7 @@ dxl_goal_position = [
     [2176, 1350, 1350, 2530, 2560],                         # Move
     [2176, 1350, 1350, 2530, 2400],                         # Loose
     [2176, 2048, 750, 2400, 2400],                          # Bow
-    [2048, 2048, 2048, 2048, 2700]]                         # Center
+    [2048, 2520, 1049, 1570, 2700]]                         # Center
 
 dxl_position_p_gain = 700
 
