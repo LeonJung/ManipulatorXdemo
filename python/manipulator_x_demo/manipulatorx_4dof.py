@@ -2,19 +2,20 @@
 # -*- coding: utf-8 -*-
 
 #
-# manipulatorx_4dof.py
+# sync_read_write.py
 #
-#  Created on: 2016. 7. 5.
-#      Author: Ryu Woon Jung (Leon), Tae Hoon Lim (Darby)
+#  Created on: 2016. 6. 16.
+#      Author: Ryu Woon Jung (Leon)
 #
 
 #
-# *********     ManipulatorX-4DOF Example      *********
+# *********     Sync Read and Sync Write Example      *********
 #
 #
-# This example uses "SyncReadWrite example" using Dynamixel XM-430.
-# For the details of the Dynamixel, visit E-Manual(support.robotis.com).
-# Be sure that Dynamixel XM-430 properties are already set as %% ID : 1 ~ 5 from the bottom / Baudnum : 3 (Baudrate : 1000000 [1M])
+# Available Dynamixel model on this example : All models using Protocol 2.0
+# This example is designed for using two Dynamixel PRO 54-200, and an USB2DYNAMIXEL.
+# To use another Dynamixel model, such as X series, see their details in E-Manual(support.robotis.com) and edit below variables yourself.
+# Be sure that Dynamixel PRO properties are already set as %% ID : 1 / Baudnum : 3 (Baudrate : 1000000 [1M])
 #
 
 import os, ctypes, time
@@ -48,19 +49,13 @@ ADDR_XM430_PROF_ACCELERATION  = 108
 ADDR_XM430_PROF_VELOCITY      = 112
 ADDR_XM430_GOAL_POSITION      = 116
 ADDR_XM430_PRESENT_POSITION   = 132
-ADDR_XM430_TORQUE_DISABLE     = 64
 
 
 # Data Byte Length
-LEN_XM430_GOAL_POSITION           = 4
-LEN_XM430_PRESENT_POSITION        = 4
-LEN_XM430_ACCELERATION_LIMIT      = 4
-LEN_XM430_VELOCITY_LIMIT          = 4
-LEN_XM430_TORQUE_ENABLE           = 1
-LEN_XM430_POSITION_P_GAIN         = 2
-LEN_XM430_PROFLIE_ACCELERATION    = 4
-LEN_XM430_PROFILE_VELOCITY        = 4
-LEN_XM430_TORQUE_DISABLE          = 1
+LEN_XM430_GOAL_POSITION       = 4
+LEN_XM430_PRESENT_POSITION    = 4
+
+LEN_XM430_GOAL_VELOCITY       = 2
 
 # Protocol version
 PROTOCOL_VERSION            = 2                             # See which protocol version is used in the Dynamixel
@@ -72,7 +67,7 @@ DXL3_ID                     = 3                             # Dynamixel ID: 3
 DXL4_ID                     = 4                             # Dynamixel ID: 4
 DXL5_ID                     = 5                             # Dynamixel ID: 5
 BAUDRATE                    = 1000000
-DEVICENAME                  = "/dev/ttyUSB0".encode('utf-8')# Check which port is being used on your controller
+DEVICENAME                  = "COM5".encode('utf-8')        # Check which port is being used on your controller
                                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0"
 
 TORQUE_ENABLE               = 1                             # Value for enabling the torque
@@ -92,6 +87,9 @@ port_num = dynamixel.portHandler(DEVICENAME)
 # Initialize PacketHandler Structs
 dynamixel.packetHandler()
 
+# Initialize Groupsyncwrite instance
+groupwrite_num = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_GOAL_POSITION, LEN_XM430_GOAL_POSITION)
+
 # Initialize Groupsyncread Structs for Present Position
 groupread_num = dynamixel.groupSyncRead(port_num, PROTOCOL_VERSION, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
 
@@ -102,22 +100,22 @@ dxl_getdata_result = 0                                      # GetParam result
 
 dxl_goal_position = [
     [2048, 2320, 1049, 1770, 2700],                         # Init
-    [1920, 2048,  750, 2400, 2400],                         # Bow
+    [1920, 2048, 750, 2400, 2400],                          # Bow
     [1920, 1350, 1350, 2530, 2400],                         # Move
     [1920, 1350, 1350, 2530, 2560],                         # Grab
     [2048, 2320, 1049, 1770, 2560],                         # Center
     [2176, 1350, 1350, 2530, 2560],                         # Move
     [2176, 1350, 1350, 2530, 2400],                         # Loose
-    [2176, 2048,  750, 2400, 2400],                         # Bow
+    [2176, 2048, 750, 2400, 2400],                          # Bow
     [2048, 2320, 1049, 1770, 2700]]
 
 dxl_position_p_gain = 1000
 
 dxl_acc_limit = 1000
 dxl_vel_limit = 100
-dxl_prof_acc = [4, 4, 4, 9, 4]
+dxl_prof_acc = [4,4,4,9,4]
 dxl_prof_vel = 40
-dxl_prof_vel_array = [dxl_prof_vel] * 5
+dxl_prof_vel_array = [dxl_prof_vel]*5
 
 dxl_error = 0                                               # Dynamixel error
 
@@ -141,368 +139,330 @@ else:
     quit()
 
 
-# Initialize Groupsyncwrite instance
-groupwrite_acceleration_limit = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_ACCELERATION_LIMIT, LEN_XM430_ACCELERATION_LIMIT)
 
-# Add Dynamixel #1~#5 acceleration limit value to the Syncwrite storage
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL1_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-    quit()
 
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL2_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-    quit()
+# Acceleration Limit #1
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_ACCELERATION_LIMIT, dxl_acc_limit)
+# Acceleration Limit #2
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_ACCELERATION_LIMIT, dxl_acc_limit)
+# Acceleration Limit #3
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_ACCELERATION_LIMIT, dxl_acc_limit)
+# Acceleration Limit #4
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_ACCELERATION_LIMIT, dxl_acc_limit)
+# Acceleration Limit #5
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_ACCELERATION_LIMIT, dxl_acc_limit)
 
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL3_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-    quit()
 
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL4_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-    quit()
+# Velocity Limit #1
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_VELOCITY_LIMIT, dxl_vel_limit)
+# Velocity Limit #2
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_VELOCITY_LIMIT, dxl_vel_limit)
+# Velocity Limit #3
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_VELOCITY_LIMIT, dxl_vel_limit)
+# Velocity Limit #4
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_VELOCITY_LIMIT, dxl_vel_limit)
+# Velocity Limit #5
+dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_VELOCITY_LIMIT, dxl_vel_limit)
 
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL5_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-    quit()
 
-# Syncwrite acceleration limit
-dynamixel.groupSyncWriteTxPacket(groupwrite_acceleration_limit)
+# Enable Dynamixel#1 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_ENABLE)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+else:
+    print("Dynamixel#1 has been successfully connected")
 
-# Clear syncwrite parameter storage
-dynamixel.groupSyncWriteClearParam(groupwrite_acceleration_limit)
-
-
-#--------------------------------------------------------------------------------------------------------------#
-
-# Initialize Groupsyncwrite instance
-groupwrite_velocity_limit = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_VELOCITY_LIMIT, LEN_XM430_VELOCITY_LIMIT)
-
-# Add Dynamixel #1~#5 velocity limit value to the Syncwrite storage
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_velocity_limit, DXL1_ID, dxl_vel_limit, LEN_XM430_VELOCITY_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_velocity_limit, DXL2_ID, dxl_vel_limit, LEN_XM430_VELOCITY_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_velocity_limit, DXL3_ID, dxl_vel_limit, LEN_XM430_VELOCITY_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_velocity_limit, DXL4_ID, dxl_vel_limit, LEN_XM430_VELOCITY_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_velocity_limit, DXL5_ID, dxl_vel_limit, LEN_XM430_VELOCITY_LIMIT)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-    quit()
-
-# Syncwrite velocity limit
-dynamixel.groupSyncWriteTxPacket(groupwrite_velocity_limit)
+# Enable Dynamixel#2 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_ENABLE)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+else:
+    print("Dynamixel#2 has been successfully connected")
 
-# Clear syncwrite parameter storage
-dynamixel.groupSyncWriteClearParam(groupwrite_velocity_limit)
-
-#--------------------------------------------------------------------------------------------------------------#
-# Initialize Groupsyncwrite instance
-groupwrite_torque_enable = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)
-
-# Add Dynamixel #1~#5 torque enable value to the Syncwrite storage
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_enable, DXL1_ID, TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_enable, DXL2_ID, TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_enable, DXL3_ID, TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_enable, DXL4_ID, TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_enable, DXL5_ID, TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-    quit()
-
-# Syncwrite torque enable
-dynamixel.groupSyncWriteTxPacket(groupwrite_torque_enable)
+# Enable Dynamixel#3 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_ENABLE)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+else:
+    print("Dynamixel#3 has been successfully connected")
 
-# Clear syncwrite parameter storage
-dynamixel.groupSyncWriteClearParam(groupwrite_torque_enable)
-
-
-#--------------------------------------------------------------------------------------------------------------#
-
-# Initialize Groupsyncwrite instance
-groupwrite_profile_acceleration      = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_PROF_ACCELERATION, LEN_XM430_PROFLIE_ACCELERATION)
-
-# Add Dynamixel #1~#5 profile acceleration value to the Syncwrite storage
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_acceleration, DXL1_ID, dxl_prof_acc[DXL1_ID - 1], LEN_XM430_PROFLIE_ACCELERATION)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_acceleration, DXL2_ID, dxl_prof_acc[DXL2_ID - 1], LEN_XM430_PROFLIE_ACCELERATION)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_acceleration, DXL3_ID, dxl_prof_acc[DXL3_ID - 1], LEN_XM430_PROFLIE_ACCELERATION)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_acceleration, DXL4_ID, dxl_prof_acc[DXL4_ID - 1], LEN_XM430_PROFLIE_ACCELERATION)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_acceleration, DXL5_ID, dxl_prof_acc[DXL5_ID - 1], LEN_XM430_PROFLIE_ACCELERATION)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-    quit()
-
-# Syncwrite profile acceleration
-dynamixel.groupSyncWriteTxPacket(groupwrite_profile_acceleration)
+# Enable Dynamixel#4 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_ENABLE)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+else:
+    print("Dynamixel#4 has been successfully connected")
 
-# Clear syncwrite parameter storage
-dynamixel.groupSyncWriteClearParam(groupwrite_profile_acceleration)
-
-#--------------------------------------------------------------------------------------------------------------#
-
-
-# Initialize Groupsyncwrite instance
-groupwrite_position_p_gain       = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_POSITION_P_GAIN, LEN_XM430_POSITION_P_GAIN)
-
-# Add Dynamixel #1~#5 position p gain value to the Syncwrite storage
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_position_p_gain, DXL1_ID, dxl_position_p_gain, LEN_XM430_POSITION_P_GAIN)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_position_p_gain, DXL2_ID, dxl_position_p_gain, LEN_XM430_POSITION_P_GAIN)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_position_p_gain, DXL3_ID, dxl_position_p_gain, LEN_XM430_POSITION_P_GAIN)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_position_p_gain, DXL4_ID, dxl_position_p_gain, LEN_XM430_POSITION_P_GAIN)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_position_p_gain, DXL5_ID, dxl_position_p_gain, LEN_XM430_POSITION_P_GAIN)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-    quit()
-
-# Syncwrite position p gain
-dynamixel.groupSyncWriteTxPacket(groupwrite_position_p_gain)
+# Enable Dynamixel#5 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_ENABLE)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+else:
+    print("Dynamixel#5 has been successfully connected")
 
-# Clear syncwrite parameter storage
-dynamixel.groupSyncWriteClearParam(groupwrite_position_p_gain)
-
-#--------------------------------------------------------------------------------------------------------------#
 
 
-# Add parameter storage for Dynamixel #1~#5 present position values
+
+
+# Profile Acceleration Limit #1
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc)
+# # Profile Acceleration Limit #2
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc)
+# # Profile Acceleration Limit #3
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc)
+# # Profile Acceleration Limit #4
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc)
+# # Profile Acceleration Limit #5
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc)
+#
+#
+# # Profile Velocity Limit #1
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_PROF_VELOCITY, dxl_prof_vel)
+# # Profile Velocity Limit #2
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_PROF_VELOCITY, dxl_prof_vel)
+# # Profile Velocity Limit #3
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_PROF_VELOCITY, dxl_prof_vel)
+# # Profile Velocity Limit #4
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_PROF_VELOCITY, dxl_prof_vel)
+# # Profile Velocity Limit #5
+# dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_PROF_VELOCITY, dxl_prof_vel)
+
+
+
+
+
+# Enable position p gain #1
+dynamixel.write2ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_POSITION_P_GAIN, dxl_position_p_gain)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Enable position p gain #2
+dynamixel.write2ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_POSITION_P_GAIN, dxl_position_p_gain)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Enable position p gain #3
+dynamixel.write2ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_POSITION_P_GAIN, dxl_position_p_gain)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Enable position p gain #4
+dynamixel.write2ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_POSITION_P_GAIN, dxl_position_p_gain)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Enable position p gain #5
+dynamixel.write2ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_POSITION_P_GAIN, dxl_position_p_gain)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+
+# Add parameter storage for Dynamixel#1 present position value
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncReadAddParam(groupread_num, DXL1_ID)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncRead addparam failed" % (DXL1_ID))
     quit()
 
+# Add parameter storage for Dynamixel#2 present position value
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncReadAddParam(groupread_num, DXL2_ID)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncRead addparam failed" % (DXL2_ID))
     quit()
 
+# Add parameter storage for Dynamixel#3 present position value
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncReadAddParam(groupread_num, DXL3_ID)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncRead addparam failed" % (DXL3_ID))
     quit()
 
+# Add parameter storage for Dynamixel#4 present position value
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncReadAddParam(groupread_num, DXL4_ID)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncRead addparam failed" % (DXL4_ID))
     quit()
 
+# Add parameter storage for Dynamixel#5 present position value
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncReadAddParam(groupread_num, DXL5_ID)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncRead addparam failed" % (DXL5_ID))
     quit()
-
 
 # Syncread present position
 dynamixel.groupSyncReadTxRxPacket(groupread_num)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
 
-
-# Check if groupsyncread data of Dynamixel #1~#5 is available
+# Check if groupsyncread data of Dynamixel#1 is available
 dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL1_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
 if dxl_getdata_result != 1:
     print("[ID:%03d] groupSyncRead getdata failed" % (DXL1_ID))
     quit()
 
+# Check if groupsyncread data of Dynamixel#2 is available
 dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL2_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
 if dxl_getdata_result != 1:
     print("[ID:%03d] groupSyncRead getdata failed" % (DXL2_ID))
     quit()
 
+# Check if groupsyncread data of Dynamixel#3 is available
 dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL3_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
 if dxl_getdata_result != 1:
     print("[ID:%03d] groupSyncRead getdata failed" % (DXL3_ID))
     quit()
 
+# Check if groupsyncread data of Dynamixel#4 is available
 dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL4_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
 if dxl_getdata_result != 1:
     print("[ID:%03d] groupSyncRead getdata failed" % (DXL4_ID))
     quit()
 
+# Check if groupsyncread data of Dynamixel#5 is available
 dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL5_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
 if dxl_getdata_result != 1:
     print("[ID:%03d] groupSyncRead getdata failed" % (DXL5_ID))
     quit()
 
-# Get Dynamixel #1~#5 present position values
+# Get Dynamixel#1 present position value
 dxl1_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL1_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+# Get Dynamixel#2 present position value
 dxl2_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL2_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+# Get Dynamixel#3 present position value
 dxl3_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL3_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+# Get Dynamixel#4 present position value
 dxl4_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL4_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+# Get Dynamixel#5 present position value
 dxl5_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL5_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
 
+print("[dxl1_present_position] : %03d" % (dxl1_present_position))
+print("[dxl2_present_position] : %03d" % (dxl2_present_position))
+print("[dxl3_present_position] : %03d" % (dxl3_present_position))
+print("[dxl4_present_position] : %03d" % (dxl4_present_position))
+print("[dxl5_present_position] : %03d" % (dxl5_present_position))
 
 while 1:
     print("Press any key to continue! (or press ESC to quit!)")
     if getch() == chr(ESC_ASCII_VALUE):
         break
 
-    # Run 9 poses for manipulation
-    for pose in range(0, 9):
+    for pose in range(0,9):
+        print("[dxl1_present_position] : %03d" % (dxl1_present_position))
+        print("[dxl2_present_position] : %03d" % (dxl2_present_position))
+        print("[dxl3_present_position] : %03d" % (dxl3_present_position))
+        print("[dxl4_present_position] : %03d" % (dxl4_present_position))
+        print("[dxl5_present_position] : %03d" % (dxl5_present_position))
+
         dxl_position = [
-            abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID - 1]),
-            abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID - 1]),
-            abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID - 1]),
-            abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID - 1]),
-            abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID - 1])]
+            abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID-1]),
+            abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID-1]),
+            abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID-1]),
+            abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID-1]),
+            abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID-1])]
 
         dxl_max_position = max(dxl_position)
         if dxl_max_position == 0:
             dxl_max_position = 1
 
-        dxl_prof_vel_array = [dxl_prof_vel] * 5
-        dxl_prof_vel_array[DXL1_ID - 1] = dxl_prof_vel_array[DXL1_ID - 1] * (abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL2_ID - 1] = dxl_prof_vel_array[DXL2_ID - 1] * (abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL3_ID - 1] = dxl_prof_vel_array[DXL3_ID - 1] * (abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL4_ID - 1] = dxl_prof_vel_array[DXL4_ID - 1] * (abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL5_ID - 1] = dxl_prof_vel_array[DXL5_ID - 1] * (abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID - 1]) / dxl_max_position)
+        print("[dxl1_position] : %03d" % (dxl_position[0]))
+        print("[dxl2_position] : %03d" % (dxl_position[1]))
+        print("[dxl3_position] : %03d" % (dxl_position[2]))
+        print("[dxl4_position] : %03d" % (dxl_position[3]))
+        print("[dxl5_position] : %03d" % (dxl_position[4]))
+        print("[dxl_max_position] : %03d" % (dxl_max_position))
 
-        # Initialize Groupsyncwrite instance
-        groupwrite_profile_velocity = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_PROF_VELOCITY, LEN_XM430_PROFILE_VELOCITY)
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc[DXL1_ID-1])
+        # Profile Acceleration Limit #2
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc[DXL2_ID-1])
+        # Profile Acceleration Limit #3
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc[DXL3_ID-1])
+        # Profile Acceleration Limit #4
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc[DXL4_ID-1])
+        # Profile Acceleration Limit #5
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_PROF_ACCELERATION, dxl_prof_acc[DXL5_ID-1])
 
-        # Add Dynamixel #1~5 profile velocity value to the Syncwrite storage
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL1_ID, int(dxl_prof_vel_array[DXL1_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        dxl_prof_vel_array = [dxl_prof_vel]*5
+        dxl_prof_vel_array[DXL1_ID-1] = dxl_prof_vel_array[DXL1_ID-1] * (abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL2_ID-1] = dxl_prof_vel_array[DXL2_ID-1] * (abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL3_ID-1] = dxl_prof_vel_array[DXL3_ID-1] * (abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL4_ID-1] = dxl_prof_vel_array[DXL4_ID-1] * (abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL5_ID-1] = dxl_prof_vel_array[DXL5_ID-1] * (abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID-1]) / dxl_max_position)
+
+        print("[dxl_prof_vel[0]] : %03d" % (dxl_prof_vel_array[0]))
+        print("[dxl_prof_vel[1]] : %03d" % (dxl_prof_vel_array[1]))
+        print("[dxl_prof_vel[2]] : %03d" % (dxl_prof_vel_array[2]))
+        print("[dxl_prof_vel[3]] : %03d" % (dxl_prof_vel_array[3]))
+        print("[dxl_prof_vel[4]] : %03d" % (dxl_prof_vel_array[4]))
+
+        # Add Dynamixel#1 goal position value to the Syncwrite storage
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_PROF_VELOCITY,     int(dxl_prof_vel_array[DXL1_ID - 1]))
+
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_num, DXL1_ID, dxl_goal_position[pose][DXL1_ID - 1], LEN_XM430_GOAL_POSITION)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL2_ID, int(dxl_prof_vel_array[DXL2_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        # Add Dynamixel#2 goal position value to the Syncwrite parameter storage
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_PROF_VELOCITY,     int(dxl_prof_vel_array[DXL2_ID - 1]))
+
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_num, DXL2_ID, dxl_goal_position[pose][DXL2_ID - 1], LEN_XM430_GOAL_POSITION)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL3_ID, int(dxl_prof_vel_array[DXL3_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        # Add Dynamixel#3 goal position value to the Syncwrite parameter storage
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_PROF_VELOCITY,     int(dxl_prof_vel_array[DXL3_ID - 1]))
+
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_num, DXL3_ID, dxl_goal_position[pose][DXL3_ID - 1], LEN_XM430_GOAL_POSITION)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL4_ID, int(dxl_prof_vel_array[DXL4_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        # Add Dynamixel#4 goal position value to the Syncwrite parameter storage
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_PROF_VELOCITY,    int(dxl_prof_vel_array[DXL4_ID - 1]))
+
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_num, DXL4_ID, dxl_goal_position[pose][DXL4_ID - 1], LEN_XM430_GOAL_POSITION)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL5_ID, int(dxl_prof_vel_array[DXL5_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
-        if dxl_addparam_result != 1:
-            print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-            quit()
+        # Add Dynamixel#5 goal position value to the Syncwrite parameter storage
+        dynamixel.write4ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_PROF_VELOCITY,     int(dxl_prof_vel_array[DXL5_ID - 1]))
 
-        # Syncwrite profile velocity
-        dynamixel.groupSyncWriteTxPacket(groupwrite_profile_velocity)
-        if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
-            dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
-
-        # Clear syncwrite parameter storage
-        dynamixel.groupSyncWriteClearParam(groupwrite_profile_velocity)
-
-        # Initialize Groupsyncwrite instance
-        groupwrite_goal_position = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_GOAL_POSITION, LEN_XM430_GOAL_POSITION)
-
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_goal_position, DXL1_ID, dxl_goal_position[pose][DXL1_ID - 1], LEN_XM430_GOAL_POSITION)).value
-        if dxl_addparam_result != 1:
-            print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-            quit()
-
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_goal_position, DXL2_ID, dxl_goal_position[pose][DXL2_ID - 1], LEN_XM430_GOAL_POSITION)).value
-        if dxl_addparam_result != 1:
-            print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-            quit()
-
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_goal_position, DXL3_ID, dxl_goal_position[pose][DXL3_ID - 1], LEN_XM430_GOAL_POSITION)).value
-        if dxl_addparam_result != 1:
-            print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-            quit()
-
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_goal_position, DXL4_ID, dxl_goal_position[pose][DXL4_ID - 1], LEN_XM430_GOAL_POSITION)).value
-        if dxl_addparam_result != 1:
-            print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-            quit()
-
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_goal_position, DXL5_ID, dxl_goal_position[pose][DXL5_ID - 1], LEN_XM430_GOAL_POSITION)).value
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_num, DXL5_ID, dxl_goal_position[pose][DXL5_ID - 1], LEN_XM430_GOAL_POSITION)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
             quit()
 
         # Syncwrite goal position
-        dynamixel.groupSyncWriteTxPacket(groupwrite_goal_position)
+        dynamixel.groupSyncWriteTxPacket(groupwrite_num)
         if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
             dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
 
         # Clear syncwrite parameter storage
-        dynamixel.groupSyncWriteClearParam(groupwrite_goal_position)
+        dynamixel.groupSyncWriteClearParam(groupwrite_num)
 
         while 1:
             # Syncread present position
@@ -510,37 +470,49 @@ while 1:
             if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
                 dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
 
-            # Check if groupsyncread data of Dynamixel #1~#5 is available
+            # Check if groupsyncread data of Dynamixel#1 is available
             dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL1_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
             if dxl_getdata_result != 1:
                 print("[ID:%03d] groupSyncRead getdata failed" % (DXL1_ID))
                 quit()
 
+            # Check if groupsyncread data of Dynamixel#2 is available
             dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL2_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
             if dxl_getdata_result != 1:
                 print("[ID:%03d] groupSyncRead getdata failed" % (DXL2_ID))
                 quit()
 
+            # Check if groupsyncread data of Dynamixel#3 is available
             dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL3_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
             if dxl_getdata_result != 1:
                 print("[ID:%03d] groupSyncRead getdata failed" % (DXL3_ID))
                 quit()
 
+            # Check if groupsyncread data of Dynamixel#4 is available
             dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL4_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
             if dxl_getdata_result != 1:
                 print("[ID:%03d] groupSyncRead getdata failed" % (DXL4_ID))
                 quit()
 
+            # Check if groupsyncread data of Dynamixel#5 is available
             dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL5_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
             if dxl_getdata_result != 1:
                 print("[ID:%03d] groupSyncRead getdata failed" % (DXL5_ID))
                 quit()
 
-            # Get Dynamixel #1~#5 present position value
+            # Get Dynamixel#1 present position value
             dxl1_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL1_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+            # Get Dynamixel#2 present position value
             dxl2_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL2_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+            # Get Dynamixel#3 present position value
             dxl3_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL3_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+            # Get Dynamixel#4 present position value
             dxl4_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL4_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
+
+            # Get Dynamixel#5 present position value
             dxl5_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL5_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
 
             print("[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d"
@@ -551,42 +523,40 @@ while 1:
 
         time.sleep(2.5)
 
-# Initialize Groupsyncwrite instance
-groupwrite_torque_disable = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)
-
-# Add Dynamixel #1~#5 torque enable value to the Syncwrite storage
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_disable, DXL1_ID, TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_disable, DXL2_ID, TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_disable, DXL3_ID, TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_disable, DXL4_ID, TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
-    quit()
-
-dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_disable, DXL5_ID, TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)).value
-if dxl_addparam_result != 1:
-    print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
-    quit()
-
-# Syncwrite torque enable
-dynamixel.groupSyncWriteTxPacket(groupwrite_torque_disable)
+# Disable Dynamixel#1 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL1_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_DISABLE)
 if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
 
-# Clear syncwrite parameter storage
-dynamixel.groupSyncWriteClearParam(groupwrite_torque_disable)
+# Disable Dynamixel#2 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL2_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_DISABLE)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Disable Dynamixel#3 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL3_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_DISABLE)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Disable Dynamixel#4 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL4_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_DISABLE)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
+
+# Disable Dynamixel#5 Torque
+dynamixel.write1ByteTxRx(port_num, PROTOCOL_VERSION, DXL5_ID, ADDR_XM430_TORQUE_ENABLE, TORQUE_DISABLE)
+if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
+    dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
+elif dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION) != 0:
+    dynamixel.printRxPacketError(PROTOCOL_VERSION, dynamixel.getLastRxPacketError(port_num, PROTOCOL_VERSION))
 
 # Close port
 dynamixel.closePort(port_num)
