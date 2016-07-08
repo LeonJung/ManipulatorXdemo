@@ -48,7 +48,7 @@ ADDR_XM430_PROF_ACCELERATION  = 108
 ADDR_XM430_PROF_VELOCITY      = 112
 ADDR_XM430_GOAL_POSITION      = 116
 ADDR_XM430_PRESENT_POSITION   = 132
-ADDR_XM430_TORQUE_DISABLE     = 64
+ADDR_XM430_TORQUE_DISABLE      = 64
 
 
 # Data Byte Length
@@ -72,7 +72,7 @@ DXL3_ID                     = 3                             # Dynamixel ID: 3
 DXL4_ID                     = 4                             # Dynamixel ID: 4
 DXL5_ID                     = 5                             # Dynamixel ID: 5
 BAUDRATE                    = 1000000
-DEVICENAME                  = "/dev/ttyUSB0".encode('utf-8')# Check which port is being used on your controller
+DEVICENAME                  = "COM6".encode('utf-8')        # Check which port is being used on your controller
                                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0"
 
 TORQUE_ENABLE               = 1                             # Value for enabling the torque
@@ -102,22 +102,22 @@ dxl_getdata_result = 0                                      # GetParam result
 
 dxl_goal_position = [
     [2048, 2320, 1049, 1770, 2700],                         # Init
-    [1920, 2048,  750, 2400, 2400],                         # Bow
+    [1920, 2048, 750, 2400, 2400],                          # Bow
     [1920, 1350, 1350, 2530, 2400],                         # Move
     [1920, 1350, 1350, 2530, 2560],                         # Grab
     [2048, 2320, 1049, 1770, 2560],                         # Center
     [2176, 1350, 1350, 2530, 2560],                         # Move
     [2176, 1350, 1350, 2530, 2400],                         # Loose
-    [2176, 2048,  750, 2400, 2400],                         # Bow
+    [2176, 2048, 750, 2400, 2400],                          # Bow
     [2048, 2320, 1049, 1770, 2700]]
 
 dxl_position_p_gain = 1000
 
 dxl_acc_limit = 1000
 dxl_vel_limit = 100
-dxl_prof_acc = [4, 4, 4, 9, 4]
+dxl_prof_acc = [4,4,4,9,4]
 dxl_prof_vel = 40
-dxl_prof_vel_array = [dxl_prof_vel] * 5
+dxl_prof_vel_array = [dxl_prof_vel]*5
 
 dxl_error = 0                                               # Dynamixel error
 
@@ -144,7 +144,7 @@ else:
 # Initialize Groupsyncwrite instance
 groupwrite_acceleration_limit = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_ACCELERATION_LIMIT, LEN_XM430_ACCELERATION_LIMIT)
 
-# Add Dynamixel #1~#5 acceleration limit value to the Syncwrite storage
+# Add Dynamixel#1~#5 acceleration limit value to the Syncwrite storage
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL1_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
@@ -182,7 +182,7 @@ dynamixel.groupSyncWriteClearParam(groupwrite_acceleration_limit)
 #--------------------------------------------------------------------------------------------------------------#
 
 # Initialize Groupsyncwrite instance
-groupwrite_velocity_limit = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_VELOCITY_LIMIT, LEN_XM430_VELOCITY_LIMIT)
+groupwrite_velocity_limit        = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_VELOCITY_LIMIT, LEN_XM430_VELOCITY_LIMIT)
 
 # Add Dynamixel #1~#5 velocity limit value to the Syncwrite storage
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_velocity_limit, DXL1_ID, dxl_vel_limit, LEN_XM430_VELOCITY_LIMIT)).value
@@ -220,7 +220,7 @@ dynamixel.groupSyncWriteClearParam(groupwrite_velocity_limit)
 
 #--------------------------------------------------------------------------------------------------------------#
 # Initialize Groupsyncwrite instance
-groupwrite_torque_enable = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)
+groupwrite_torque_enable       = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)
 
 # Add Dynamixel #1~#5 torque enable value to the Syncwrite storage
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_enable, DXL1_ID, TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)).value
@@ -372,7 +372,7 @@ if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
     dynamixel.printTxRxResult(PROTOCOL_VERSION, dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION))
 
 
-# Check if groupsyncread data of Dynamixel #1~#5 is available
+# Check if groupsyncread data of Dynamixel#1~#5 is available
 dxl_getdata_result = ctypes.c_ubyte(dynamixel.groupSyncReadIsAvailable(groupread_num, DXL1_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)).value
 if dxl_getdata_result != 1:
     print("[ID:%03d] groupSyncRead getdata failed" % (DXL1_ID))
@@ -412,27 +412,27 @@ while 1:
         break
 
     # Run 9 poses for manipulation
-    for pose in range(0, 9):
+    for pose in range(0,9):
         dxl_position = [
-            abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID - 1]),
-            abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID - 1]),
-            abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID - 1]),
-            abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID - 1]),
-            abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID - 1])]
+            abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID-1]),
+            abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID-1]),
+            abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID-1]),
+            abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID-1]),
+            abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID-1])]
 
         dxl_max_position = max(dxl_position)
         if dxl_max_position == 0:
             dxl_max_position = 1
 
-        dxl_prof_vel_array = [dxl_prof_vel] * 5
-        dxl_prof_vel_array[DXL1_ID - 1] = dxl_prof_vel_array[DXL1_ID - 1] * (abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL2_ID - 1] = dxl_prof_vel_array[DXL2_ID - 1] * (abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL3_ID - 1] = dxl_prof_vel_array[DXL3_ID - 1] * (abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL4_ID - 1] = dxl_prof_vel_array[DXL4_ID - 1] * (abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID - 1]) / dxl_max_position)
-        dxl_prof_vel_array[DXL5_ID - 1] = dxl_prof_vel_array[DXL5_ID - 1] * (abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID - 1]) / dxl_max_position)
+        dxl_prof_vel_array = [dxl_prof_vel]*5
+        dxl_prof_vel_array[DXL1_ID-1] = dxl_prof_vel_array[DXL1_ID-1] * (abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL2_ID-1] = dxl_prof_vel_array[DXL2_ID-1] * (abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL3_ID-1] = dxl_prof_vel_array[DXL3_ID-1] * (abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL4_ID-1] = dxl_prof_vel_array[DXL4_ID-1] * (abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID-1]) / dxl_max_position)
+        dxl_prof_vel_array[DXL5_ID-1] = dxl_prof_vel_array[DXL5_ID-1] * (abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID-1]) / dxl_max_position)
 
         # Initialize Groupsyncwrite instance
-        groupwrite_profile_velocity = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_PROF_VELOCITY, LEN_XM430_PROFILE_VELOCITY)
+        groupwrite_profile_velocity     = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_PROF_VELOCITY, LEN_XM430_PROFILE_VELOCITY)
 
         # Add Dynamixel #1~5 profile velocity value to the Syncwrite storage
         dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL1_ID, int(dxl_prof_vel_array[DXL1_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
@@ -469,7 +469,7 @@ while 1:
         dynamixel.groupSyncWriteClearParam(groupwrite_profile_velocity)
 
         # Initialize Groupsyncwrite instance
-        groupwrite_goal_position = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_GOAL_POSITION, LEN_XM430_GOAL_POSITION)
+        groupwrite_goal_position             = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_GOAL_POSITION, LEN_XM430_GOAL_POSITION)
 
         dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_goal_position, DXL1_ID, dxl_goal_position[pose][DXL1_ID - 1], LEN_XM430_GOAL_POSITION)).value
         if dxl_addparam_result != 1:
@@ -552,7 +552,7 @@ while 1:
         time.sleep(2.5)
 
 # Initialize Groupsyncwrite instance
-groupwrite_torque_disable = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)
+groupwrite_torque_disable       = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)
 
 # Add Dynamixel #1~#5 torque enable value to the Syncwrite storage
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_torque_disable, DXL1_ID, TORQUE_DISABLE, LEN_XM430_TORQUE_DISABLE)).value
