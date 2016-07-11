@@ -72,7 +72,7 @@ DXL3_ID                     = 3                             # Dynamixel ID: 3
 DXL4_ID                     = 4                             # Dynamixel ID: 4
 DXL5_ID                     = 5                             # Dynamixel ID: 5
 BAUDRATE                    = 1000000
-DEVICENAME                  = "COM7".encode('utf-8')        # Check which port is being used on your controller
+DEVICENAME                  = "/dev/ttyUSB0".encode('utf-8')        # Check which port is being used on your controller
                                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0"
 
 TORQUE_ENABLE               = 1                             # Value for enabling the torque
@@ -113,11 +113,10 @@ dxl_goal_position = [
 
 dxl_position_p_gain = 1000
 
-dxl_acc_limit = 1000
-dxl_vel_limit = 100
-dxl_prof_acc = [4,4,4,9,4]
-dxl_prof_vel = 40
-dxl_prof_vel_array = [dxl_prof_vel]*5
+dxl_acc_limit = 9
+dxl_vel_limit = 40
+dxl_prof_acc = [4, 4, 4, 9, 4]
+dxl_prof_vel = [40, 40, 40, 40, 40]
 
 dxl_error = 0                                               # Dynamixel error
 
@@ -144,7 +143,7 @@ else:
 # Initialize Groupsyncwrite instance
 groupwrite_acceleration_limit = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_ACCELERATION_LIMIT, LEN_XM430_ACCELERATION_LIMIT)
 
-# Add Dynamixel#1~#5 acceleration limit value to the Syncwrite storage
+# Add Dynamixel #1~#5 acceleration limit value to the Syncwrite storage
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_acceleration_limit, DXL1_ID, dxl_acc_limit, LEN_XM430_ACCELERATION_LIMIT)).value
 if dxl_addparam_result != 1:
     print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
@@ -218,7 +217,9 @@ if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
 # Clear syncwrite parameter storage
 dynamixel.groupSyncWriteClearParam(groupwrite_velocity_limit)
 
+
 #--------------------------------------------------------------------------------------------------------------#
+
 # Initialize Groupsyncwrite instance
 groupwrite_torque_enable = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_TORQUE_ENABLE, LEN_XM430_TORQUE_ENABLE)
 
@@ -296,8 +297,8 @@ if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
 # Clear syncwrite parameter storage
 dynamixel.groupSyncWriteClearParam(groupwrite_profile_acceleration)
 
-#--------------------------------------------------------------------------------------------------------------#
 
+#--------------------------------------------------------------------------------------------------------------#
 
 # Initialize Groupsyncwrite instance
 groupwrite_position_p_gain = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_POSITION_P_GAIN, LEN_XM430_POSITION_P_GAIN)
@@ -336,8 +337,8 @@ if dynamixel.getLastTxRxResult(port_num, PROTOCOL_VERSION) != COMM_SUCCESS:
 # Clear syncwrite parameter storage
 dynamixel.groupSyncWriteClearParam(groupwrite_position_p_gain)
 
-#--------------------------------------------------------------------------------------------------------------#
 
+#--------------------------------------------------------------------------------------------------------------#
 
 # Add parameter storage for Dynamixel #1~#5 present position values
 dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncReadAddParam(groupread_num, DXL1_ID)).value
@@ -405,17 +406,6 @@ dxl3_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL3_ID, A
 dxl4_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL4_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
 dxl5_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL5_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
 
-print("[dxl1_prof_acceleration] : %03d" % (dxl_prof_acc[DXL1_ID - 1]))
-print("[dxl2_prof_acceleration] : %03d" % (dxl_prof_acc[DXL2_ID - 1]))
-print("[dxl3_prof_acceleration] : %03d" % (dxl_prof_acc[DXL3_ID - 1]))
-print("[dxl4_prof_acceleration] : %03d" % (dxl_prof_acc[DXL4_ID - 1]))
-print("[dxl5_prof_acceleration] : %03d" % (dxl_prof_acc[DXL5_ID - 1]))
-
-print("[dxl1_present_position] : %03d" % (dxl1_present_position))
-print("[dxl2_present_position] : %03d" % (dxl2_present_position))
-print("[dxl3_present_position] : %03d" % (dxl3_present_position))
-print("[dxl4_present_position] : %03d" % (dxl4_present_position))
-print("[dxl5_present_position] : %03d" % (dxl5_present_position))
 
 while 1:
     print("Press any key to continue! (or press ESC to quit!)")
@@ -424,18 +414,6 @@ while 1:
 
     # Run 9 poses for manipulation
     for pose in range(0,9):
-        print("[dxl1_prof_acceleration] : %03d" % (dxl_prof_acc[DXL1_ID - 1]))
-        print("[dxl2_prof_acceleration] : %03d" % (dxl_prof_acc[DXL2_ID - 1]))
-        print("[dxl3_prof_acceleration] : %03d" % (dxl_prof_acc[DXL3_ID - 1]))
-        print("[dxl4_prof_acceleration] : %03d" % (dxl_prof_acc[DXL4_ID - 1]))
-        print("[dxl5_prof_acceleration] : %03d" % (dxl_prof_acc[DXL5_ID - 1]))
-
-        print("[dxl1_present_position] : %03d" % (dxl1_present_position))
-        print("[dxl2_present_position] : %03d" % (dxl2_present_position))
-        print("[dxl3_present_position] : %03d" % (dxl3_present_position))
-        print("[dxl4_present_position] : %03d" % (dxl4_present_position))
-        print("[dxl5_present_position] : %03d" % (dxl5_present_position))
-
         dxl_range = [
             abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID-1]),
             abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID-1]),
@@ -444,56 +422,51 @@ while 1:
             abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID-1])]
 
         dxl_max_range = max(dxl_range)
-        if dxl_max_range == 0:
+        if dxl_max_range < 1:
             dxl_max_range = 1
 
-        print("[dxl1_range] : %03d" % (dxl_range[0]))
-        print("[dxl2_range] : %03d" % (dxl_range[1]))
-        print("[dxl3_range] : %03d" % (dxl_range[2]))
-        print("[dxl4_range] : %03d" % (dxl_range[3]))
-        print("[dxl5_range] : %03d" % (dxl_range[4]))
-        print("[dxl_max_range] : %03d" % (dxl_max_range))
+        dxl_prof_vel = [40, 40, 40, 40, 40]
+        dxl_prof_vel[DXL1_ID-1] = dxl_prof_vel[DXL1_ID-1] * (dxl_range[DXL1_ID-1] / (dxl_max_range * 1.0))
+        dxl_prof_vel[DXL2_ID-1] = dxl_prof_vel[DXL2_ID-1] * (dxl_range[DXL2_ID-1] / (dxl_max_range * 1.0))
+        dxl_prof_vel[DXL3_ID-1] = dxl_prof_vel[DXL3_ID-1] * (dxl_range[DXL3_ID-1] / (dxl_max_range * 1.0))
+        dxl_prof_vel[DXL4_ID-1] = dxl_prof_vel[DXL4_ID-1] * (dxl_range[DXL4_ID-1] / (dxl_max_range * 1.0))
+        dxl_prof_vel[DXL5_ID-1] = dxl_prof_vel[DXL5_ID-1] * (dxl_range[DXL5_ID-1] / (dxl_max_range * 1.0))
 
-        dxl_prof_vel_array = [dxl_prof_vel]*5
-        dxl_prof_vel_array[DXL1_ID-1] = dxl_prof_vel_array[DXL1_ID-1] * (abs(dxl1_present_position - dxl_goal_position[pose][DXL1_ID-1]) / dxl_max_range)
-        dxl_prof_vel_array[DXL2_ID-1] = dxl_prof_vel_array[DXL2_ID-1] * (abs(dxl2_present_position - dxl_goal_position[pose][DXL2_ID-1]) / dxl_max_range)
-        dxl_prof_vel_array[DXL3_ID-1] = dxl_prof_vel_array[DXL3_ID-1] * (abs(dxl3_present_position - dxl_goal_position[pose][DXL3_ID-1]) / dxl_max_range)
-        dxl_prof_vel_array[DXL4_ID-1] = dxl_prof_vel_array[DXL4_ID-1] * (abs(dxl4_present_position - dxl_goal_position[pose][DXL4_ID-1]) / dxl_max_range)
-        dxl_prof_vel_array[DXL5_ID-1] = dxl_prof_vel_array[DXL5_ID-1] * (abs(dxl5_present_position - dxl_goal_position[pose][DXL5_ID-1]) / dxl_max_range)
+        for num in range(0,4):
+            if dxl_prof_vel[num] < 1.0:
+                dxl_prof_vel[num] = 1.0
 
-        print("[dxl_prof_vel[0]] : %03d" % (dxl_prof_vel_array[0]))
-        print("[dxl_prof_vel[1]] : %03d" % (dxl_prof_vel_array[1]))
-        print("[dxl_prof_vel[2]] : %03d" % (dxl_prof_vel_array[2]))
-        print("[dxl_prof_vel[3]] : %03d" % (dxl_prof_vel_array[3]))
-        print("[dxl_prof_vel[4]] : %03d" % (dxl_prof_vel_array[4]))
-
-        print("#-----------------------------------------------------#")
+        dxl_prof_vel[DXL1_ID-1] = int(dxl_prof_vel[DXL1_ID-1])
+        dxl_prof_vel[DXL2_ID-1] = int(dxl_prof_vel[DXL2_ID-1])
+        dxl_prof_vel[DXL3_ID-1] = int(dxl_prof_vel[DXL3_ID-1])
+        dxl_prof_vel[DXL4_ID-1] = int(dxl_prof_vel[DXL4_ID-1])
+        dxl_prof_vel[DXL5_ID-1] = int(dxl_prof_vel[DXL5_ID-1])
 
         # Initialize Groupsyncwrite instance
         groupwrite_profile_velocity     = dynamixel.groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_XM430_PROF_VELOCITY, LEN_XM430_PROFILE_VELOCITY)
 
         # Add Dynamixel #1~5 profile velocity value to the Syncwrite storage
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL1_ID, int(dxl_prof_vel_array[DXL1_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL1_ID, dxl_prof_vel[DXL1_ID-1], LEN_XM430_PROFILE_VELOCITY)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL1_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL2_ID, int(dxl_prof_vel_array[DXL2_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL2_ID, dxl_prof_vel[DXL2_ID-1], LEN_XM430_PROFILE_VELOCITY)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL2_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL3_ID, int(dxl_prof_vel_array[DXL3_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL3_ID, dxl_prof_vel[DXL3_ID-1], LEN_XM430_PROFILE_VELOCITY)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL3_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL4_ID, int(dxl_prof_vel_array[DXL4_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL4_ID, dxl_prof_vel[DXL4_ID-1], LEN_XM430_PROFILE_VELOCITY)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL4_ID))
             quit()
 
-        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL5_ID, int(dxl_prof_vel_array[DXL5_ID-1]), LEN_XM430_PROFILE_VELOCITY)).value
+        dxl_addparam_result = ctypes.c_ubyte(dynamixel.groupSyncWriteAddParam(groupwrite_profile_velocity, DXL5_ID, dxl_prof_vel[DXL5_ID-1], LEN_XM430_PROFILE_VELOCITY)).value
         if dxl_addparam_result != 1:
             print("[ID:%03d] groupSyncWrite addparam failed" % (DXL5_ID))
             quit()
@@ -581,8 +554,8 @@ while 1:
             dxl4_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL4_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
             dxl5_present_position = dynamixel.groupSyncReadGetData(groupread_num, DXL5_ID, ADDR_XM430_PRESENT_POSITION, LEN_XM430_PRESENT_POSITION)
 
-            # print("[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d"
-                #    % (DXL1_ID, dxl_goal_position[pose][DXL1_ID - 1], dxl1_present_position, DXL2_ID, dxl_goal_position[pose][DXL2_ID - 1], dxl2_present_position, DXL3_ID, dxl_goal_position[pose][DXL3_ID - 1], dxl3_present_position, DXL4_ID, dxl_goal_position[pose][DXL4_ID - 1], dxl4_present_position, DXL5_ID, dxl_goal_position[pose][DXL5_ID - 1], dxl5_present_position))
+            print("[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d"
+                   % (DXL1_ID, dxl_goal_position[pose][DXL1_ID - 1], dxl1_present_position, DXL2_ID, dxl_goal_position[pose][DXL2_ID - 1], dxl2_present_position, DXL3_ID, dxl_goal_position[pose][DXL3_ID - 1], dxl3_present_position, DXL4_ID, dxl_goal_position[pose][DXL4_ID - 1], dxl4_present_position, DXL5_ID, dxl_goal_position[pose][DXL5_ID - 1], dxl5_present_position))
 
             if not ((abs(dxl_goal_position[pose][DXL1_ID - 1] - dxl1_present_position) > DXL_MOVING_STATUS_THRESHOLD) or (abs(dxl_goal_position[pose][DXL2_ID - 1] - dxl2_present_position) > DXL_MOVING_STATUS_THRESHOLD)):
                 break
